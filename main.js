@@ -1,9 +1,21 @@
-for (let i of [1, 2, 3]) {
-  console.log(i)
+function createToyElement(tagName, attributes, ...children) {
+  const element = document.createElement(tagName);
+  for (const key in attributes) {
+    if (attributes.hasOwnProperty(key)) {
+      const value = attributes[key];
+      element.setAttribute(key, value)
+    }
+  }
+  for (let child of children) {
+    if (typeof child === 'string') {
+      child = document.createTextNode(child)
+    }
+    element.appendChild(child)
+  }
+  return element
 }
-
-function createToyElement(tagName, attribute, ...children) {
-  return document.createElement(tagName)
-}
-
-window.a = <div></div>
+document.body.appendChild(<div id='king' class='main'>
+  <div>hello</div>
+  <div>world</div>
+  <div>!</div>
+</div>)
