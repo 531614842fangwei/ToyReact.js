@@ -1,21 +1,18 @@
-function createToyElement(tagName, attributes, ...children) {
-  const element = document.createElement(tagName);
-  for (const key in attributes) {
-    if (attributes.hasOwnProperty(key)) {
-      const value = attributes[key];
-      element.setAttribute(key, value)
-    }
+import { Component, createToyElement, DomRender } from './toy-react'
+
+class MyComponent extends Component {
+  render() {
+    return <div>
+      <div>MyComponent</div>
+      {this.children}
+    </div>
   }
-  for (let child of children) {
-    if (typeof child === 'string') {
-      child = document.createTextNode(child)
-    }
-    element.appendChild(child)
-  }
-  return element
 }
-document.body.appendChild(<div id='king' class='main'>
-  <div>hello</div>
-  <div>world</div>
+
+DomRender(<MyComponent class='main'>
+  <div>hello
+  <div>world</div>, <div>world</div>
+  </div>
+  {[<div>world</div>, <div>world</div>]}
   <div>!</div>
-</div>)
+</MyComponent>, document.body)
