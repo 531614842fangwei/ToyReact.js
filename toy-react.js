@@ -22,7 +22,6 @@ class TextWrapper {
     this.root = document.createTextNode(content)
   }
 }
-
 export class Component {
   constructor() {
     // 不使用{}，是因为避免原型污染
@@ -49,7 +48,7 @@ export class Component {
 
 }
 
-export function createToyElement(type, attributes, ...children) {
+function createElement(type, attributes, ...children) {
   let element
   /**
    *  jsx将小写解析为string、大写解析为class
@@ -74,10 +73,9 @@ export function createToyElement(type, attributes, ...children) {
   const insertChildren = (children) => {
     for (let child of children) {
       if (typeof child === 'object' && child instanceof Array) {
-        console.error(child)
         /**
          * 这里感觉最多出现一次递归，不存在视频中说的数组套数组
-         * div嵌套也只是createToyElement嵌套，并非节点数据直接产生多维数组
+         * div嵌套也只是createElement嵌套，并非节点数据直接产生多维数组
          * 除非～～～{[<div>, <div>]}
          *
          * 思路fix: 最常用的map会出现上述情况，极其频繁
@@ -97,7 +95,9 @@ export function createToyElement(type, attributes, ...children) {
   return element
 }
 
-export function DomRender(component, parentElement) {
-  // 注意：调用的是component.root
-  parentElement.appendChild(component.root)
+const ToyReact = {
+  Component,
+  createElement,
 }
+
+export default ToyReact

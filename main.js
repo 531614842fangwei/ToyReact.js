@@ -1,4 +1,5 @@
-import { Component, createToyElement, DomRender } from './toy-react'
+import ToyReact, { Component } from './toy-react'
+import ToyReactDom from './toy-react-dom'
 
 class MyComponent extends Component {
   render() {
@@ -9,10 +10,8 @@ class MyComponent extends Component {
   }
 }
 
-DomRender(<MyComponent class='main'>
-  <div>hello
-  <div>world</div>, <div>world</div>
-  </div>
-  {[<div>world</div>, <div>world</div>]}
+ToyReactDom.render(<MyComponent class='main'>
+  <div>hello</div>
+  <div>world</div>
   <div>!</div>
 </MyComponent>, document.body)
