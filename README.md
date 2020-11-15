@@ -20,6 +20,12 @@
 3. rerender => _renderToDOM => _renderToDOM(递归)
 4. 对attribute中的onClick添加特殊处理
 
+## setState的实现和demo完成
+1. 编写setState方法，进行merge和rerender
+2. 复制重现demo
+3. 处理className属性和child为null的情况
+4. 处理range自带的bug（自己电脑上没发现。这步虽然繁琐，但无需特别在意。）
+
 
 
 

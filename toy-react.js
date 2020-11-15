@@ -12,12 +12,19 @@ class ElementWrapper {
     if (key.match(/^on([\s\S]+)$/)) {
       this.root.addEventListener(RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase()), value)
     } else {
+      if (key === 'className') {
+        this.root.setAttribute('class', value)
+        return
+      }
       this.root.setAttribute(key, value)
     }
   }
   appendChild(component) {
     // // 注意：调用的是component.root
     // this.root.appendChild(component.root)
+    if (component === null) {
+      return
+    }
     let range = document.createRange();
     range.setStart(this.root, this.root.childNodes.length)
     range.setEnd(this.root, this.root.childNodes.length)
@@ -61,8 +68,41 @@ export class Component {
     this.render()._renderToDOM(range)
   }
   rerender() {
-    this._range.deleteContents();
-    this._renderToDOM(this._range)
+    // 这里面的新旧range替换，先替换再移位再删除，只是为了处理range的bug
+    // 本地没有出现这个bug，后续也用不到，不用太在意
+    const oldRange = this._range
+    let range = document.createRange();
+    range.setStart(oldRange.startContainer, oldRange.startOffset);
+    range.setEnd(oldRange.startContainer, oldRange.startOffset);
+    this._renderToDOM(range)
+    oldRange.setStart(range.endContainer, range.endOffset)
+    oldRange.deleteContents();
+  }
+
+  /**
+   * 只管merge，没有diff
+   * @param {*} newState
+   */
+  setState(newState) {
+    if (this.state === null || typeof this.state !== 'object') {
+      this.state = newState
+      this.rerender()
+      return;
+    }
+    let merge = (oldState, newState) => {
+      for (const p in newState) {
+        if (newState.hasOwnProperty(p)) {
+          if (oldState[p] === null || typeof oldState[p] !== 'object') {
+            oldState[p] = newState[p]
+          } else {
+            merge(oldState[p], newState[p])
+          }
+        }
+      }
+
+    }
+    merge(this.state, newState)
+    this.rerender()
   }
   /**
    * 最为关键的一个步骤
