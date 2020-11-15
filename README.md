@@ -30,7 +30,9 @@
 1. get vdom方法，返回几个关键信息（type，props， children）
 2. 让ElementWrapper继承Component公用setAttribute和appendChild
 3. 因为必须有方法才能完成渲染，所以 get vdom 返回改成this
-4. 处理range自带的bug（自己电脑上没发现。这步虽然繁琐，但无需特别在意。）
+4. 在ElementWrapper中完成setAttribute和appendChild的操作
+5. 主要差异体现在每个类的实例this上都有了关键属性，原本：拿到值直接生成节点->塞属性->先删除后添加
+6. 变成了：将各个属性在this上先做保留，只在_renderToDOM中设置属性->先删除后添加
 
 
 

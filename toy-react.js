@@ -10,6 +10,10 @@ export class Component {
   appendChild(child) {
     this.children.push(child)
   }
+  get vdom() {
+    return this.render().vdom
+  }
+
   /**
    * 使用root的方式不支持或者说是难以支持节点的改变
    * 所以需要一个新的方法，同样做了递归
@@ -73,42 +77,86 @@ export class Component {
  * 但是最最主要的是为了实例上的root属性，
  * 用以标识出节点已经到了浏览器可以直接渲染的地步
  */
-class ElementWrapper {
-  constructor(tagName) {
-    this.root = document.createElement(tagName)
+class ElementWrapper extends Component {
+  constructor(type) {
+    super(type)
+    this.type = type
+    // this.root = document.createElement(type)
   }
-  setAttribute(key, value) {
-    if (key.match(/^on([\s\S]+)$/)) {
-      this.root.addEventListener(RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase()), value)
-    } else {
-      if (key === 'className') {
-        this.root.setAttribute('class', value)
-        return
-      }
-      this.root.setAttribute(key, value)
-    }
+  // setAttribute(key, value) {
+  //   if (key.match(/^on([\s\S]+)$/)) {
+  //     this.root.addEventListener(RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase()), value)
+  //   } else {
+  //     if (key === 'className') {
+  //       this.root.setAttribute('class', value)
+  //       return
+  //     }
+  //     this.root.setAttribute(key, value)
+  //   }
+  // }
+  // appendChild(component) {
+  //   // // 注意：调用的是component.root
+  //   // this.root.appendChild(component.root)
+  //   let range = document.createRange();
+  //   range.setStart(this.root, this.root.childNodes.length)
+  //   range.setEnd(this.root, this.root.childNodes.length)
+  //   component._renderToDOM(range)
+  // }
+  get vdom() {
+    this.vchildren = this.children.map(child => child.vdom)
+    return this
+    // return {
+    //   type: this.type,
+    //   props: this.props,
+    //   children: this.children
+    // }
   }
-  appendChild(component) {
-    // // 注意：调用的是component.root
-    // this.root.appendChild(component.root)
-    if (component === null) {
-      return
-    }
-    let range = document.createRange();
-    range.setStart(this.root, this.root.childNodes.length)
-    range.setEnd(this.root, this.root.childNodes.length)
-    component._renderToDOM(range)
 
-  }
   _renderToDOM(range) {
+    this._range = range
     range.deleteContents();
-    range.insertNode(this.root)
+    let root = document.createElement(this.type)
+    for (const key in this.props) {
+      const value = this.props[key];
+      if (key.match(/^on([\s\S]+)$/)) {
+        root.addEventListener(RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase()), value)
+      } else {
+        if (key === 'className') {
+          root.setAttribute('class', value)
+        } else {
+          root.setAttribute(key, value)
+        }
+      }
+    }
+
+    if (!this.vchildren) {
+      this.vchildren = this.children.map(child => child.vdom)
+    }
+    for (const child of this.children) {
+      let childRange = document.createRange();
+      childRange.setStart(root, root.childNodes.length)
+      childRange.setEnd(root, root.childNodes.length)
+      child._renderToDOM(childRange)
+    }
+
+
+    range.insertNode(root)
   }
 }
 
-class TextWrapper {
+class TextWrapper extends Component {
   constructor(content) {
+    super(content)
+    this.type = '#text'
+    this.content = content
     this.root = document.createTextNode(content)
+  }
+  get vdom() {
+    return this
+    // return {
+    //   type: this.type,
+    //   content: this.content
+    // }
   }
   _renderToDOM(range) {
     range.deleteContents();
@@ -140,6 +188,12 @@ function createElement(type, attributes, ...children) {
   }
   const insertChildren = (children) => {
     for (let child of children) {
+      if (typeof child === 'string') {
+        child = new TextWrapper(child)
+      }
+      if (child === null) {
+        continue
+      }
       if (typeof child === 'object' && child instanceof Array) {
         /**
          * 这里感觉最多出现一次递归，不存在视频中说的数组套数组
@@ -150,12 +204,9 @@ function createElement(type, attributes, ...children) {
          * btw 想法保留
          * */
         insertChildren(child)
-        return
+      } else {
+        element.appendChild(child)
       }
-      if (typeof child === 'string') {
-        child = new TextWrapper(child)
-      }
-      element.appendChild(child)
     }
   }
   insertChildren(children)
