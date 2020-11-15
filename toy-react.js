@@ -9,17 +9,34 @@ class ElementWrapper {
     this.root = document.createElement(tagName)
   }
   setAttribute(key, value) {
-    this.root.setAttribute(key, value)
+    if (key.match(/^on([\s\S]+)$/)) {
+      this.root.addEventListener(RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase()), value)
+    } else {
+      this.root.setAttribute(key, value)
+    }
   }
   appendChild(component) {
-    // 注意：调用的是component.root
-    this.root.appendChild(component.root)
+    // // 注意：调用的是component.root
+    // this.root.appendChild(component.root)
+    let range = document.createRange();
+    range.setStart(this.root, this.root.childNodes.length)
+    range.setEnd(this.root, this.root.childNodes.length)
+    component._renderToDOM(range)
+
+  }
+  _renderToDOM(range) {
+    range.deleteContents();
+    range.insertNode(this.root)
   }
 }
 
 class TextWrapper {
   constructor(content) {
     this.root = document.createTextNode(content)
+  }
+  _renderToDOM(range) {
+    range.deleteContents();
+    range.insertNode(this.root)
   }
 }
 export class Component {
@@ -35,17 +52,29 @@ export class Component {
     this.children.push(child)
   }
   /**
+   * 使用root的方式不支持或者说是难以支持节点的改变
+   * 所以需要一个新的方法，同样做了递归
+   * (不使用symbol以免影响思路连贯性)
+   * */
+  _renderToDOM(range) {
+    this._range = range;
+    this.render()._renderToDOM(range)
+  }
+  rerender() {
+    this._range.deleteContents();
+    this._renderToDOM(this._range)
+  }
+  /**
    * 最为关键的一个步骤
    * getter 方法，如果这个对象上没有root，那么调用render返回的root
    * */
-  get root() {
-    if (!this._root) {
-      this._root = this.render().root
-      return this._root
-    }
-    return this._root
-  }
-
+  // get root() {
+  //   if (!this._root) {
+  //     this._root = this.render().root
+  //     return this._root
+  //   }
+  //   return this._root
+  // }
 }
 
 function createElement(type, attributes, ...children) {

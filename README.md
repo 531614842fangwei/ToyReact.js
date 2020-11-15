@@ -13,3 +13,14 @@
 4. 关键点：getter root 方法来返回非抽象节点（有root属性）
 5. 递归处理children为数组的情况
 6. 改写DomRender方法
+
+## 添加state和视图更新方法
+1. 添加数据来源，并将办法更新视图
+2. 使用root已经不能很好支持节点更新，所以用range将节点放进对应位置
+3. rerender => _renderToDOM => _renderToDOM(递归)
+4. 对attribute中的onClick添加特殊处理
+
+
+
+
+
