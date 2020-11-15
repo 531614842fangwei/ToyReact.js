@@ -3,6 +3,8 @@ export class Component {
     // 不使用{}，是因为避免原型污染
     this.props = Object.create(null)
     this.children = []
+    this._root = null
+    this._range = null
   }
   setAttribute(key, value) {
     this.props[key] = value
@@ -14,6 +16,66 @@ export class Component {
     return this.render().vdom
   }
 
+  // get vchildren() {
+  //   return this.children.map(child => child.vdom)
+  // }
+
+  update() {
+    let isSameNode = (oldNode, newNode) => {
+      if (oldNode.type !== newNode.type) {
+        return false
+      }
+      for (const key in newNode.props) {
+        if (newNode.props[key] !== oldNode.props[key]) {
+          return false
+        }
+      }
+      if (Object.keys(oldNode.props).length > Object.keys(newNode.props).length) {
+        return false
+      }
+      if (newNode.type === '#text') {
+        if (newNode.content !== oldNode.content)
+          return false
+      }
+      return true
+    }
+
+    let update = (oldNode, newNode) => {
+
+      if (!isSameNode(oldNode, newNode)) {
+        newNode._renderToDOM(oldNode._range)
+        return
+      }
+      newNode._range = oldNode._range
+
+      let newChildren = newNode.vchildren;
+      let oldChildren = oldNode.vchildren;
+
+      if (!newChildren || !newChildren.length) { return }
+
+      let tailRange = oldChildren[oldChildren.length - 1]._range;
+
+      for (let i = 0; i < newChildren.length; i++) {
+        let newChild = newChildren[i]
+        let oldChild = oldChildren[i]
+        if (i < oldChildren.length) {
+          update(oldChild, newChild)
+        } else {
+          let range = document.createRange();
+          range.setStart(tailRange.endContainer, tailRange.endOffset)
+          range.setEnd(tailRange.endContainer, tailRange.endOffset)
+          newChild._renderToDOM(range)
+          tailRange = range
+        }
+      }
+
+    }
+
+    let vdom = this.vdom
+    update(this._vdom, vdom);
+    this._vdom = vdom
+  }
+
   /**
    * 使用root的方式不支持或者说是难以支持节点的改变
    * 所以需要一个新的方法，同样做了递归
@@ -21,19 +83,21 @@ export class Component {
    * */
   _renderToDOM(range) {
     this._range = range;
-    this.render()._renderToDOM(range)
+    this._vdom = this.vdom
+    this._vdom._renderToDOM(range)
   }
-  rerender() {
-    // 这里面的新旧range替换，先替换再移位再删除，只是为了处理range的bug
-    // 本地没有出现这个bug，后续也用不到，不用太在意
-    const oldRange = this._range
-    let range = document.createRange();
-    range.setStart(oldRange.startContainer, oldRange.startOffset);
-    range.setEnd(oldRange.startContainer, oldRange.startOffset);
-    this._renderToDOM(range)
-    oldRange.setStart(range.endContainer, range.endOffset)
-    oldRange.deleteContents();
-  }
+
+  // rerender() {
+  //   // 这里面的新旧range替换，先替换再移位再删除，只是为了处理range的bug
+  //   // 本地没有出现这个bug，后续也用不到，不用太在意
+  //   const oldRange = this._range
+  //   let range = document.createRange();
+  //   range.setStart(oldRange.startContainer, oldRange.startOffset);
+  //   range.setEnd(oldRange.startContainer, oldRange.startOffset);
+  //   this._renderToDOM(range)
+  //   oldRange.setStart(range.endContainer, range.endOffset)
+  //   oldRange.deleteContents();
+  // }
 
   /**
    * 只管merge，没有diff
@@ -42,7 +106,7 @@ export class Component {
   setState(newState) {
     if (this.state === null || typeof this.state !== 'object') {
       this.state = newState
-      this.rerender()
+      this.update()
       return;
     }
     let merge = (oldState, newState) => {
@@ -58,7 +122,7 @@ export class Component {
 
     }
     merge(this.state, newState)
-    this.rerender()
+    this.update()
   }
   /**
    * 最为关键的一个步骤
@@ -114,7 +178,6 @@ class ElementWrapper extends Component {
 
   _renderToDOM(range) {
     this._range = range
-    range.deleteContents();
     let root = document.createElement(this.type)
     for (const key in this.props) {
       const value = this.props[key];
@@ -132,15 +195,14 @@ class ElementWrapper extends Component {
     if (!this.vchildren) {
       this.vchildren = this.children.map(child => child.vdom)
     }
-    for (const child of this.children) {
+    for (const child of this.vchildren) {
       let childRange = document.createRange();
       childRange.setStart(root, root.childNodes.length)
       childRange.setEnd(root, root.childNodes.length)
       child._renderToDOM(childRange)
     }
 
-
-    range.insertNode(root)
+    replaceContent(range, root)
   }
 }
 
@@ -149,7 +211,6 @@ class TextWrapper extends Component {
     super(content)
     this.type = '#text'
     this.content = content
-    this.root = document.createTextNode(content)
   }
   get vdom() {
     return this
@@ -159,9 +220,19 @@ class TextWrapper extends Component {
     // }
   }
   _renderToDOM(range) {
-    range.deleteContents();
-    range.insertNode(this.root)
+    this._range = range
+    let root = document.createTextNode(this.content)
+    replaceContent(range, root)
   }
+}
+
+function replaceContent(range, node) {
+  range.insertNode(node)
+  range.setStartAfter(node)
+  range.deleteContents()
+
+  range.setStartBefore(node)
+  range.setEndAfter(node)
 }
 
 function createElement(type, attributes, ...children) {

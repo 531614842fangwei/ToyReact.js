@@ -34,6 +34,14 @@
 5. 主要差异体现在每个类的实例this上都有了关键属性，原本：拿到值直接生成节点->塞属性->先删除后添加
 6. 变成了：将各个属性在this上先做保留，只在_renderToDOM中设置属性->先删除后添加
 
+## 添加简单diff算法有效更新dom
+1. 关键方法update，先判断节点是否一致（type,props,props长度，content）
+2. 比较较为粗浅，其实可以props之类的可以通过patch更省性能实现
+3. children对比只使用index对应来循环调用update方法（会产生递归）
+4. 处理newChildren较多的情况，尾部添加
+5. 封装通用的解决range bug 的方法
+6. *其中事件本不应该作为props，会导致大量增删，但先不展开
+
 
 
 
