@@ -1,51 +1,3 @@
-/**
- * 这两个wrapper看似什么也没干，并且完全可以不通过class来完成
- * 但是最最主要的是为了实例上的root属性，
- * 用以标识出节点已经到了浏览器可以直接渲染的地步
- */
-
-class ElementWrapper {
-  constructor(tagName) {
-    this.root = document.createElement(tagName)
-  }
-  setAttribute(key, value) {
-    if (key.match(/^on([\s\S]+)$/)) {
-      this.root.addEventListener(RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase()), value)
-    } else {
-      if (key === 'className') {
-        this.root.setAttribute('class', value)
-        return
-      }
-      this.root.setAttribute(key, value)
-    }
-  }
-  appendChild(component) {
-    // // 注意：调用的是component.root
-    // this.root.appendChild(component.root)
-    if (component === null) {
-      return
-    }
-    let range = document.createRange();
-    range.setStart(this.root, this.root.childNodes.length)
-    range.setEnd(this.root, this.root.childNodes.length)
-    component._renderToDOM(range)
-
-  }
-  _renderToDOM(range) {
-    range.deleteContents();
-    range.insertNode(this.root)
-  }
-}
-
-class TextWrapper {
-  constructor(content) {
-    this.root = document.createTextNode(content)
-  }
-  _renderToDOM(range) {
-    range.deleteContents();
-    range.insertNode(this.root)
-  }
-}
 export class Component {
   constructor() {
     // 不使用{}，是因为避免原型污染
@@ -115,6 +67,53 @@ export class Component {
   //   }
   //   return this._root
   // }
+}
+/**
+ * 这两个wrapper看似什么也没干，并且完全可以不通过class来完成
+ * 但是最最主要的是为了实例上的root属性，
+ * 用以标识出节点已经到了浏览器可以直接渲染的地步
+ */
+class ElementWrapper {
+  constructor(tagName) {
+    this.root = document.createElement(tagName)
+  }
+  setAttribute(key, value) {
+    if (key.match(/^on([\s\S]+)$/)) {
+      this.root.addEventListener(RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase()), value)
+    } else {
+      if (key === 'className') {
+        this.root.setAttribute('class', value)
+        return
+      }
+      this.root.setAttribute(key, value)
+    }
+  }
+  appendChild(component) {
+    // // 注意：调用的是component.root
+    // this.root.appendChild(component.root)
+    if (component === null) {
+      return
+    }
+    let range = document.createRange();
+    range.setStart(this.root, this.root.childNodes.length)
+    range.setEnd(this.root, this.root.childNodes.length)
+    component._renderToDOM(range)
+
+  }
+  _renderToDOM(range) {
+    range.deleteContents();
+    range.insertNode(this.root)
+  }
+}
+
+class TextWrapper {
+  constructor(content) {
+    this.root = document.createTextNode(content)
+  }
+  _renderToDOM(range) {
+    range.deleteContents();
+    range.insertNode(this.root)
+  }
 }
 
 function createElement(type, attributes, ...children) {

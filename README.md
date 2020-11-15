@@ -26,6 +26,12 @@
 3. 处理className属性和child为null的情况
 4. 处理range自带的bug（自己电脑上没发现。这步虽然繁琐，但无需特别在意。）
 
+## 生成vdom对象并完成第一渲染
+1. get vdom方法，返回几个关键信息（type，props， children）
+2. 让ElementWrapper继承Component公用setAttribute和appendChild
+3. 因为必须有方法才能完成渲染，所以 get vdom 返回改成this
+4. 处理range自带的bug（自己电脑上没发现。这步虽然繁琐，但无需特别在意。）
+
 
 
 
